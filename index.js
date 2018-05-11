@@ -9,12 +9,17 @@ const STORE = [
 
 
 function generateItemElement(item, itemIndex, template) {
+  let checkboxValue = $('.js-shopping-list-display-checkbox').prop("checked");
   return `
-    <li class="js-item-index-element" data-item-index="${itemIndex}">
+    <li class="js-item-index-element${checkboxValue && item.checked ? " hidden" : ""}" data-item-index="${itemIndex}">
       <span class="shopping-item js-shopping-item ${item.checked ? "shopping-item__checked" : ''}">${item.name}</span>
+      <input type="text" class="js-edit-item-input hidden" value="${item.name}">
       <div class="shopping-item-controls">
         <button class="shopping-item-toggle js-item-toggle">
             <span class="button-label">check</span>
+        </button>
+        <button class="shopping-item-edit js-item-edit">
+            <span class="button-label">edit</span>
         </button>
         <button class="shopping-item-delete js-item-delete">
             <span class="button-label">delete</span>
@@ -26,7 +31,6 @@ function generateItemElement(item, itemIndex, template) {
 
 function generateShoppingItemsString(shoppingList) {
   console.log("Generating shopping list element");
-
   const items = shoppingList.map((item, index) => generateItemElement(item, index));
   
   return items.join("");
@@ -34,12 +38,21 @@ function generateShoppingItemsString(shoppingList) {
 
 
 function renderShoppingList() {
+
   // render the shopping list in the DOM
   console.log('`renderShoppingList` ran');
   const shoppingListItemsString = generateShoppingItemsString(STORE);
 
   // insert that HTML into the DOM
   $('.js-shopping-list').html(shoppingListItemsString);
+}
+
+function renderShoppingListPassed(theList) {
+
+  // render the shopping list passed in to the DOM
+  const shoppingListItemsString = generateShoppingItemsString(theList);
+  // insert the produced HTML into the DOM
+  shoppingListItemsString !== "" ? $('.js-shopping-list').html(shoppingListItemsString) : $('.js-shopping-list').html(STORE);
 }
 
 
@@ -83,9 +96,52 @@ function handleItemCheckClicked() {
 
 
 function handleDeleteItemClicked() {
-  // this function will be responsible for when users want to delete a shopping list
-  // item
-  console.log('`handleDeleteItemClicked` ran')
+  $('.js-shopping-list').on('click', `.js-item-delete`, event => {
+  console.log('`handleDeleteItemClicked` ran');
+    const itemIndex = getItemIndexFromElement(event.currentTarget);
+    STORE.splice(itemIndex,1);
+    renderShoppingList();
+    console.log(STORE);
+  });
+  
+}
+
+function handleToggleCheckedDisplay() {
+  $('.js-shopping-list-display-checkbox').click(function(event) {
+    console.log("in click event");
+    renderShoppingList();
+  });
+}
+
+function handleSearchButton() {
+  $('.js-search-button').click(function(event) {
+    const searchValue = $('.js-search-box').val();
+    const found = STORE.filter(function(element) {
+      return element.name.includes(searchValue);
+    });
+    console.log("in search event");
+    renderShoppingListPassed(found);
+  });
+}
+
+function handleItemEditClicked() {
+  $('.js-shopping-list').on('click', `.js-item-edit`, event => {
+    $(event.currentTarget).closest('li').find('span.js-shopping-item').hide();//.toggleClass("hidden");
+    $(event.currentTarget).closest('li').find('input').toggleClass("hidden");
+    $(event.currentTarget).closest('li').find('input').focus();
+  });
+}
+
+function handleEditItemFocusOut() {
+  $('.js-shopping-list').on('focusout', `.js-edit-item-input`, event => {
+    $(event.currentTarget).closest('li').find('span.js-shopping-item').show();
+    $(event.currentTarget).closest('li').find('input').toggleClass("hidden");
+    const newName = $(event.currentTarget).closest('li').find('input').val();
+    const index = $(event.currentTarget).closest('li').attr('data-item-index');
+    STORE[index].name = newName;
+    renderShoppingList();
+    // $(event.currentTarget).closest('li').find('span.js-shopping-item').html();
+  });
 }
 
 // this function will be our callback when the page loads. it's responsible for
@@ -94,8 +150,12 @@ function handleDeleteItemClicked() {
 // for individual shopping list items.
 function handleShoppingList() {
   renderShoppingList();
+  handleSearchButton();
+  handleToggleCheckedDisplay();
   handleNewItemSubmit();
   handleItemCheckClicked();
+  handleItemEditClicked();
+  handleEditItemFocusOut();
   handleDeleteItemClicked();
 }
 
